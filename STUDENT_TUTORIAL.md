@@ -69,6 +69,7 @@ The container startup script expects the custom firmware checkout to be present 
 ```bash
 git clone --single-branch -b feature/diffgains_fix_servo_k https://github.com/Prisma-Drone-Team/Px4_hcore_autopilot.git PX4_neabotics --recursive
 ```
+The Leonardo Drone Contest arena is provided as example. Students are encouraged to implement a custom world to explore. The world files are stored in  /PX4_Neabotics/Tools/simulation/gz/worlds and launched in nano PX4_Neabotics/ROMFS/px4fmu_common/init.d-posix/airframes/22002_gz_koala 
 
 ### 4.3 Build the Docker image
 
