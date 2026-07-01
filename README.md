@@ -7,18 +7,13 @@ This repository contains tools and configurations for PX4 SITL (Software In The 
 The system consists of several modular ROS2 packages, each with a specific responsibility:
 
 ```
-uav_motion_stack/
+uav_motion_stack_template/
 ├── ros2_ws-src/                    # ROS2 workspace with modular packages
-│   ├── aruco_detector_ocv_ros2/    # opencv-based aruco detector (submodule)
 │   ├── drone_odometry2/            # Vehicle odometry publisher (submodule)
-│   ├── path_planner/               # 3D trajectory planning (submodule)
-│   ├── teleop_node/                # Teleoperation control (submodule)
 │   ├── babyk_drone_manager/        # Drone state management and safety (submodule)
-│   └── traj_interp/                # Trajectory interpolation with PX4 (submodule)
 ├── docker/               # Docker configurations
 ├── models/               # Custom Gazebo models
 ├── worlds/               # Gazebo worlds for simulation
-├── PX4-Autopilot/        # PX4 firmware 
 └── PX4_neabotics/        # PX4 custom firmware 
 ```
 
@@ -36,8 +31,8 @@ A step by step series of examples that tell you how to get a development environ
 
 ### 1. Repository Clone
 ```bash
-git clone --recursive https://github.com/Prisma-Drone-Team/uav_motion_stack.git -b paper_stable
-cd uav_motion_stack
+git clone --recursive https://github.com/Prisma-Drone-Team/uav_motion_stack_template.git -b paper_stable
+cd uav_motion_stack_template
 ```
 
 ### 2. Clone PX4 Firmware (Optional)
@@ -103,10 +98,7 @@ tmux kill-server
 
 Each ROS2 package used in this system is documented in its own specific README:
 
-- **traj_interp**: Detailed documentation of the interpolation algorithm and PX4 integration
 - **drone_odometry2**: Odometry message conversion specifications
-- **path_planner**: 3D planning and obstacle avoidance algorithms
-- **teleop_node**: Manual control configuration and interfaces
 - **babyk_drone_manager**: Safety system and state monitoring
 
 Refer to the README.md file in each package folder for technical details.
@@ -119,113 +111,16 @@ Refer to the README.md file in each package folder for technical details.
 
 ## ROS2 Packages
 
-### 🛸 traj_interp
-**Trajectory interpolator with complete PX4 integration**
-
-Implements the algorithm for smooth trajectory interpolation with integrated PX4 offboard control.
-
-**Key Features:**
-- Smooth trajectory interpolation with jerk/acceleration limiting
-- Complete PX4 integration: arming/disarming, offboard mode
-- Automatic heading calculation based on movement direction
-- Smart arming: only on first path or after landing
-- Auto-disarming on land detection
-- Automatic PX4 mode management
-
-#### Base Trajectory Interpolator Algorithm
-
-The core algorithm implements a smooth trajectory interpolator with velocity, acceleration, and jerk limiting for each axis. Here's the step-by-step process:
-
-**Input Parameters:**
-- UAV position **p**, desired goal position **p^cmd**
-- Parameters: (ωᵢ, ζᵢ, aᵢᵐᵃˣ, vᵢᵐᵃˣ, jᵢᵐᵃˣ) for i ∈ {x,y,z}
-- Timestep Δt
-- Initial conditions: pᵢʳᵉᶠ(0) = pᵢᶜᵐᵈ, vᵢʳᵉᶠ(0) = 0, aᵢʳᵉᶠ(0) = 0
-
-**Algorithm Steps:**
-
-For each axis i ∈ {x, y, z}:
-
-1. **Calculate desired acceleration:**
-   ```
-   aᵢᵈᵉˢ(t) = ωᵢ² × (pᵢᶠᵇ(t) - pᵢʳᵉᶠ(t)) - 2ζᵢωᵢvᵢʳᵉᶠ(t)
-   ```
-
-2. **Compute jerk:**
-   ```
-   jᵢ = (aᵢᵈᵉˢ - aᵢʳᵉᶠ) / Δt
-   ```
-
-3. **Apply jerk limiting:**
-   ```
-   if |jᵢ| > jᵢᵐᵃˣ:
-       jᵢ = sign(jᵢ) × jᵢᵐᵃˣ
-   
-   aᵢᵈᵉˢ = aᵢʳᵉᶠ + jᵢ × Δt
-   ```
-
-4. **Apply acceleration limiting:**
-   ```
-   if |aᵢᵈᵉˢ| > aᵢᵐᵃˣ:
-       aᵢʳᵉᶠ = sign(aᵢᵈᵉˢ) × aᵢᵐᵃˣ
-   else:
-       aᵢʳᵉᶠ = aᵢᵈᵉˢ
-   ```
-
-5. **Integrate to compute velocity:**
-   ```
-   vᵢᵈᵉˢ = vᵢʳᵉᶠ + aᵢʳᵉᶠ × Δt
-   ```
-
-6. **Apply velocity limiting:**
-   ```
-   if |vᵢᵈᵉˢ| > vᵢᵐᵃˣ:
-       vᵢʳᵉᶠ = sign(vᵢᵈᵉˢ) × vᵢᵐᵃˣ
-   else:
-       vᵢʳᵉᶠ = vᵢᵈᵉˢ
-   ```
-
-7. **Integrate to compute position:**
-   ```
-   pᵢʳᵉᶠ = pᵢʳᵉᶠ + vᵢʳᵉᶠ × Δt
-   ```
-
-This algorithm ensures smooth trajectory following by limiting jerk (rate of acceleration change), acceleration, and velocity independently for each axis, resulting in physically feasible and smooth drone movements.
-
-**Main Topics:**
-- **Subscriber:** `/path` (nav_msgs/Path) - Trajectory to follow
-- **Publisher:** `/px4_trajectory` (trajectory_msgs/MultiDOFJointTrajectory) - Interpolated trajectory
-- **Publisher:** `/fcu/in/vehicle_command` - PX4 commands (arm/disarm)
-- **Publisher:** `/fcu/in/offboard_control_mode` - Offboard control mode
-- **Subscriber:** `/fcu/out/vehicle_control_mode` - Vehicle mode status
-- **Subscriber:** `/fcu/out/vehicle_land_detected` - Landing status
-
 ### 📡 drone_odometry2
 **Vehicle odometry publisher**
 
 Converts PX4 status messages to standard ROS2 odometry.
 
 **Main Topics:**
-- **Subscriber:** `/fcu/out/vehicle_odometry` (px4_msgs/VehicleOdometry)
-- **Publisher:** `/odom` (nav_msgs/Odometry)
-
-### 🗺️ path_planner  
-**3D trajectory planner**
-
-Generates optimized 3D paths for drones with obstacle avoidance.
-
-**Main Topics:**
-- **Subscriber:** `/goal_pose` (geometry_msgs/PoseStamped) - Target goal
-- **Publisher:** `/path` (nav_msgs/Path) - Planned trajectory
-
-### 🎮 teleop_node
-**Teleoperation control**
-
-Interface for manual drone control via keyboard/joystick.
-
-**Main Topics:**
-- **Subscriber:** `/cmd_vel` (geometry_msgs/Twist) - Velocity commands
-- **Publisher:** `/goal_pose` (geometry_msgs/PoseStamped) - Target pose
+- **Subscriber:** `/fmu/out/vehicle_odometry` (px4_msgs/VehicleOdometry)
+- **Publisher:** `/px4/odometry/out` (nav_msgs/Odometry)
+- **Subscriber:** `/px4/trajectory_setpoint_enu` (enu set-points)
+- **Publisher:** `/fmu/in/trajectory_setpoint` (px4 compatible ned set-points)
 
 ### 🛡️ babyk_drone_manager
 **State management and safety**
