@@ -11,7 +11,7 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 echo -e "${CYAN}======================================================${NC}"
-echo -e "${GREEN}   🚁 H-CoRE Drone Simulation Container Init${NC}" 
+echo -e "${GREEN}   🚁 PX4 Drone Simulation Container Init${NC}" 
 echo -e "${CYAN}======================================================${NC}" 
 
 # Setup ROS2 environment
@@ -23,7 +23,7 @@ source /opt/ros/humble/setup.bash
 echo -e "${BLUE}📦 Building ROS2 workspace...${NC}"
 colcon build
 source install/setup.bash
-export ROS_DOMAIN_ID=17
+export ROS_DOMAIN_ID=0
 
 echo -e "${CYAN}======================================================${NC}"
 echo -e "${WHITE}🚀 HOW TO RUN THE SIMULATION:${NC}"
